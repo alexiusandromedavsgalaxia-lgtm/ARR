@@ -11,6 +11,28 @@ ARR is a deliberately strange, expressive programming language with a native dec
 - **Swift influence:** a deliberately small optional-value influence.
 - **ARR-native:** `signal`, `boot`, `kernelPanic`, `reboot`, pipelines, modules, runtime handles and the language's own execution model.
 
+## Official documentation
+
+- `LANGUAGE.md` language contract
+- `docs/REFERENCE.md` complete reference
+- `docs/GRAMMAR.md` concrete grammar
+- `docs/TYPE_SYSTEM.md` type system
+- `docs/RUNTIME.md` execution model
+- `docs/COMPONENTS.md` component/reactive UI model
+- `docs/MODULES.md` modules and standard library
+- `docs/DIAGNOSTICS.md` diagnostics and error codes
+- `docs/TOOLCHAIN.md` CLI and tooling
+- `docs/CONFORMANCE.md` compatibility contract
+
+## Repository
+
+```text
+src/        lexer, parser, AST and interpreter runtime
+examples/   canonical ARR programs
+tests/      lexer, parser and runtime tests
+docs/       official ARR language specification
+```
+
 ## Canonical syntax
 
 ```arr
@@ -30,7 +52,6 @@ component App {
             Button("+1") on click {
                 count += 1
             }
-            Text("count = ${count}")
         }
     }
 }
@@ -40,25 +61,8 @@ boot {
 }
 ```
 
-## Official documentation
-
-- `LANGUAGE.md` is the initial language contract.
-- `docs/REFERENCE.md` is the detailed language reference.
-- `docs/GRAMMAR.md` defines the concrete grammar.
-- `docs/TYPE_SYSTEM.md` defines types, inference, optionals and generics.
-- `docs/RUNTIME.md` defines execution, environments, boot, runtime controls and determinism.
-- `docs/COMPONENTS.md` defines the intended component and reactive UI model.
-
-## Repository structure
-
-```text
-src/        lexer, parser, AST and runtime foundation
-examples/   ARR programs
-docs/       official language specification
-```
-
 ## Status
 
-ARR is being built as a real language rather than a syntax mock-up. The foundation contains a lexer, parser, AST, typed declarations, expressions, control flow, functions, boot blocks, component declarations and runtime primitives. The official documentation intentionally describes the larger language contract so implementation can grow against a stable specification.
+ARR is being built as a real language. The current main branch contains the language documentation plus the lexer, parser, AST, interpreter foundation, project configuration, examples and automated tests. The documentation deliberately defines the larger language contract so the implementation can grow feature-by-feature without turning into a pile of unrelated syntax.
 
-The language is experimental. Features explicitly marked future or experimental are not compatibility promises yet.
+Experimental and future features are explicitly identified in the documentation and are not treated as implemented merely because they are documented.
