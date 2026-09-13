@@ -1,15 +1,14 @@
 # ARR
 
-ARR is a deliberately strange, expressive programming language with a native declarative UI model, Kotlin-like concise declarations, a small Swift influence, and a runtime architecture that belongs to ARR itself.
-
-> **ARR is not JavaScript with funny punctuation.**
+ARR is a deliberately strange programming language with a native declarative UI model and an ARR-original runtime.
 
 ## Design DNA
 
-- **React influence:** declarative component trees, state, reactive rendering and component composition.
-- **Kotlin influence:** `val`, `var`, typed declarations, inference and concise function syntax.
-- **Swift influence:** a deliberately small optional-value influence.
-- **ARR-native:** `signal`, `boot`, `kernelPanic`, `reboot`, pipelines, modules, runtime handles and the language's own execution model.
+React is the only external influence intentionally retained: declarative component trees, stateful UI, reactive composition and component nesting.
+
+Everything else belongs to ARR itself. Kotlin and Swift are not language influences or compatibility targets. Their syntax is not part of canonical ARR.
+
+ARR-native concepts include `signal`, `watch`, `emit`, `derive`, `view`, `boot`, `kernelPanic`, `reboot`, pipelines, modules and runtime handles.
 
 ## Official documentation
 
@@ -18,11 +17,42 @@ ARR is a deliberately strange, expressive programming language with a native dec
 - `docs/GRAMMAR.md` concrete grammar
 - `docs/TYPE_SYSTEM.md` type system
 - `docs/RUNTIME.md` execution model
-- `docs/COMPONENTS.md` component/reactive UI model
+- `docs/COMPONENTS.md` component and reactive UI model
 - `docs/MODULES.md` modules and standard library
-- `docs/DIAGNOSTICS.md` diagnostics and error codes
+- `docs/DIAGNOSTICS.md` diagnostics
 - `docs/TOOLCHAIN.md` CLI and tooling
 - `docs/CONFORMANCE.md` compatibility contract
+- `docs/ARR_NATIVE.md` ARR-only grammar and reactive primitives
+
+## Canonical ARR
+
+```arr
+signal clicks: int = 0
+
+derive label = "clicks=" + clicks
+
+component App {
+    state title: string = "ARR"
+
+    render {
+        Column {
+            Text(title)
+            Text(label)
+            Button("increment") {
+                emit clicks(clicks + 1)
+            }
+        }
+    }
+}
+
+watch clicks {
+    print("signal changed")
+}
+
+boot {
+    print("ARR online")
+}
+```
 
 ## Repository
 
@@ -33,36 +63,6 @@ tests/      lexer, parser and runtime tests
 docs/       official ARR language specification
 ```
 
-## Canonical syntax
-
-```arr
-val name: Text = "ARR"
-var count: Int = 0
-
-fn greet(who: Text) -> Text {
-    return "hello ${who}"
-}
-
-component App {
-    state count: Int = 0
-
-    render {
-        Column {
-            Text(greet(name))
-            Button("+1") on click {
-                count += 1
-            }
-        }
-    }
-}
-
-boot {
-    print(greet(name))
-}
-```
-
 ## Status
 
-ARR is being built as a real language. The current main branch contains the language documentation plus the lexer, parser, AST, interpreter foundation, project configuration, examples and automated tests. The documentation deliberately defines the larger language contract so the implementation can grow feature-by-feature without turning into a pile of unrelated syntax.
-
-Experimental and future features are explicitly identified in the documentation and are not treated as implemented merely because they are documented.
+ARR is being built as a real language. `main` is the single canonical development line. New syntax is promoted only when it has implementation tests and official documentation.
