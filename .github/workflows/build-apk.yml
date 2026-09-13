@@ -2,9 +2,17 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      kotlin_source:
+        description: "Path to the Kotlin MainActivity source"
+        required: false
+        default: "examples/kotlin/MainActivity.kt"
+        type: string
   push:
     paths:
       - 'android-runtime/**'
+      - 'examples/kotlin/**'
+      - 'tools/build-kotlin-apk.mjs'
       - '.github/workflows/build-apk.yml'
 
 permissions:
@@ -35,9 +43,10 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
-        working-directory: android-runtime
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Inject Kotlin application
+        env:
+          KOTLIN_SOURCE: ${{ inputs.kotlin_source || 'examples/kotlin/MainActivity.kt' }}
+        run: node tools/build-kotlin-apk.mjs --source "$KOTLIN_SOURCE"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
