@@ -1,0 +1,6 @@
+{
+  "name": "arr-language",
+  "version": "0.1.0",
+  "language": "0.1",
+  "entry": "examples/hello.arr"
+}
