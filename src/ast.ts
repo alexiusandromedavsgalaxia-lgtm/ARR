@@ -1,7 +1,11 @@
 export type TypeName = string;
-export interface Program { kind:'Program'; body: Stmt[]; }
-export type Stmt = VarDecl|ExprStmt|BlockStmt|IfStmt|WhileStmt|ReturnStmt|FnDecl|BootStmt|ImportStmt|ComponentStmt|KernelPanicStmt|RebootStmt;
+export interface Program { kind:'Program'; body:Stmt[]; }
+export type Stmt = VarDecl|SignalDecl|WatchStmt|EmitStmt|DeriveStmt|ExprStmt|BlockStmt|IfStmt|WhileStmt|ReturnStmt|FnDecl|BootStmt|ImportStmt|ComponentStmt|KernelPanicStmt|RebootStmt;
 export interface VarDecl { kind:'VarDecl'; name:string; type?:TypeName; mutable:boolean; value?:Expr; }
+export interface SignalDecl { kind:'Signal'; name:string; type?:TypeName; value?:Expr; }
+export interface WatchStmt { kind:'Watch'; name:string; body:BlockStmt; }
+export interface EmitStmt { kind:'Emit'; name:string; value?:Expr; }
+export interface DeriveStmt { kind:'Derive'; name:string; value:Expr; }
 export interface ExprStmt { kind:'ExprStmt'; expr:Expr; }
 export interface BlockStmt { kind:'Block'; body:Stmt[]; }
 export interface IfStmt { kind:'If'; test:Expr; consequent:BlockStmt; alternate?:BlockStmt; }
