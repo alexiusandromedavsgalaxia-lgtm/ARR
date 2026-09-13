@@ -1,0 +1,17 @@
+{
+  "name": "arr-language",
+  "version": "0.1.0",
+  "private": false,
+  "description": "The ARR programming language foundation",
+  "main": "dist/index.js",
+  "bin": { "arr": "dist/cli.js" },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test": "npm run build && node --test dist/tests/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
