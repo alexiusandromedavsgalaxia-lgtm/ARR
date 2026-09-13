@@ -1,0 +1,29 @@
+import type { Token } from './lexer.js';
+import type * as A from './ast.js';
+export class Parser {
+ private i=0; constructor(private readonly tokens:Token[]){ }
+ parse():A.Program{const body:A.Stmt[]=[];while(!this.check('eof'))body.push(this.statement());return{kind:'Program',body};}
+ private statement():A.Stmt{
+  if(this.match('import'))return this.importStmt(); if(this.match('fn'))return this.fnStmt(); if(this.match('boot'))return{kind:'Boot',body:this.block()};
+  if(this.match('kernelPanic')){this.consume('{');return{kind:'KernelPanic',body:this.blockAfterOpen()};}
+  if(this.match('reboot')){this.match(';');return{kind:'Reboot'}}; if(this.match('if'))return this.ifStmt();
+  if(this.match('while'))return{kind:'While',test:this.expression(),body:this.block()};
+  if(this.match('return')){const value=this.check(';')||this.check('}')?undefined:this.expression();this.match(';');return{kind:'Return',value};}
+  if(this.match('component'))return this.componentStmt(); if(this.isVarStart())return this.varStmt();
+  if(this.match('{'))return{kind:'Block',body:this.blockAfterOpen().body}; const expr=this.expression();this.match(';');return{kind:'ExprStmt',expr};
+ }
+ private importStmt():A.ImportStmt{const name=this.any();this.consume('from');const path=this.any();this.match(';');return{kind:'Import',name,path};}
+ private fnStmt():A.FnDecl{const name=this.any();this.consume('(');const params:string[]=[];while(!this.checkValue(')')){params.push(this.any());if(!this.match(','))break;}this.consume(')');return{kind:'FnDecl',name,params,body:this.block()};}
+ private componentStmt():A.ComponentStmt{const name=this.any();this.consume('{');const body:A.Stmt[]=[];while(!this.check('eof')&&!this.checkValue('}')){if(this.match('state')){body.push(this.varStmt(true));continue;}if(this.match('render')){body.push({kind:'Block',body:this.block().body});continue;}body.push(this.statement());}this.consume('}');return{kind:'Component',name,body};}
+ private varStmt(_state=false):A.VarDecl{const first=this.any();const mutable=first!=='const';let type:string|undefined,name:string;if(first==='const'||first==='val'||first==='var'||first==='let'){name=this.any();if(this.match(':'))type=this.any();}else{type=first;name=this.any();}let value:A.Expr|undefined;if(this.match('='))value=this.expression();this.match(';');return{kind:'VarDecl',name,type,mutable,value};}
+ private isVarStart(){return['const','val','var','let','int','int8','int16','int32','int64','uint8','uint16','uint32','uint64','float','double','string','bool','any'].includes(this.peek().value);}
+ private ifStmt():A.IfStmt{const test=this.expression(),consequent=this.block();let alternate; if(this.match('else'))alternate=this.block();return{kind:'If',test,consequent,alternate};}
+ private block():A.BlockStmt{this.consume('{');return this.blockAfterOpen();} private blockAfterOpen():A.BlockStmt{const body:A.Stmt[]=[];while(!this.check('eof')&&!this.checkValue('}'))body.push(this.statement());this.consume('}');return{kind:'Block',body};}
+ private expression():A.Expr{return this.assignment();}
+ private assignment():A.Expr{let e=this.binary(0);if(['=','+=','-=','*=','/='].includes(this.peek().value)){const op=this.advance().value;e={kind:'Assignment',target:e,op,value:this.assignment()};}return e;}
+ private binary(min:number):A.Expr{let left=this.unary();const p:Record<string,number>={'||':1,'&&':2,'==':3,'!=':3,'<':4,'<=':4,'>':4,'>=':4,'+':5,'-':5,'*':6,'/':6,'%':6};while(p[this.peek().value]!==undefined&&p[this.peek().value]>min){const op=this.advance().value;left={kind:'Binary',op,left,right:this.binary(p[op])};}return left;}
+ private unary():A.Expr{if(['!','-','+'].includes(this.peek().value)){const op=this.advance().value;return{kind:'Unary',op,expr:this.unary()};}return this.postfix();}
+ private postfix():A.Expr{let e=this.primary();while(true){if(this.match('(')){const args:A.Expr[]=[];while(!this.checkValue(')')){args.push(this.expression());if(!this.match(','))break;}this.consume(')');e={kind:'Call',callee:e,args};continue;}if(this.match('.')||this.match('?.')){const optional=this.tokens[this.i-1].value==='?.';e={kind:'Member',object:e,property:this.any(),optional};continue;}break;}return e;}
+ private primary():A.Expr{const t=this.advance();if(t.kind==='number')return{kind:'Literal',value:Number(t.value)};if(t.kind==='string')return{kind:'Literal',value:t.value};if(t.value==='true')return{kind:'Literal',value:true};if(t.value==='false')return{kind:'Literal',value:false};if(t.value==='null')return{kind:'Literal',value:null};if(t.value==='('){const e=this.expression();this.consume(')');return e;}if(t.value==='['){const items:A.Expr[]=[];while(!this.checkValue(']')){items.push(this.expression());if(!this.match(','))break;}this.consume(']');return{kind:'Array',items};}return{kind:'Identifier',name:t.value};}
+ private check(k:Token['kind']){return this.peek().kind===k;} private checkValue(v:string){return this.peek().value===v;} private match(v:string){if(this.checkValue(v)){this.advance();return true;}return false;} private consume(v:string){if(!this.match(v))throw this.error(`expected '${v}'`);} private any(){if(this.check('eof'))throw this.error('unexpected end');return this.advance().value;} private advance(){return this.tokens[this.i++];} private peek(){return this.tokens[this.i];} private error(m:string){const t=this.peek();return new Error(`ARR parser: ${m} at ${t.line}:${t.column}`);}
+}
