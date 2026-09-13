@@ -1,14 +1,36 @@
 import type { Token } from './lexer.js';
 import type * as A from './ast.js';
+
 export class Parser {
  private i=0; constructor(private readonly tokens:Token[]){ }
  parse():A.Program{const body:A.Stmt[]=[];while(!this.check('eof'))body.push(this.statement());return{kind:'Program',body};}
- private statement():A.Stmt{if(this.match('import'))return this.importStmt();if(this.match('fn'))return this.fnStmt();if(this.match('boot'))return{kind:'Boot',body:this.block()};if(this.match('kernelPanic')){this.consume('{');return{kind:'KernelPanic',body:this.blockAfterOpen()};}if(this.match('reboot')){this.match(';');return{kind:'Reboot'}}if(this.match('if'))return this.ifStmt();if(this.match('while'))return{kind:'While',test:this.expression(),body:this.block()};if(this.match('return')){const value=this.check(';')||this.check('}')?undefined:this.expression();this.match(';');return{kind:'Return',value};}if(this.match('component'))return this.componentStmt();if(this.isVarStart())return this.varStmt();if(this.match('{'))return{kind:'Block',body:this.blockAfterOpen().body};const expr=this.expression();this.match(';');return{kind:'ExprStmt',expr};}
+ private statement():A.Stmt{
+  if(this.match('import'))return this.importStmt();
+  if(this.match('fn'))return this.fnStmt();
+  if(this.match('boot'))return{kind:'Boot',body:this.block()};
+  if(this.match('kernelPanic')){this.consume('{');return{kind:'KernelPanic',body:this.blockAfterOpen()};}
+  if(this.match('reboot')){this.match(';');return{kind:'Reboot'}}
+  if(this.match('signal'))return this.signalStmt();
+  if(this.match('watch'))return this.watchStmt();
+  if(this.match('emit'))return this.emitStmt();
+  if(this.match('derive'))return this.deriveStmt();
+  if(this.match('if'))return this.ifStmt();
+  if(this.match('while'))return{kind:'While',test:this.expression(),body:this.block()};
+  if(this.match('return')){const value=this.check(';')||this.check('}')?undefined:this.expression();this.match(';');return{kind:'Return',value};}
+  if(this.match('component'))return this.componentStmt();
+  if(this.isVarStart())return this.varStmt();
+  if(this.match('{'))return{kind:'Block',body:this.blockAfterOpen().body};
+  const expr=this.expression();this.match(';');return{kind:'ExprStmt',expr};
+ }
  private importStmt():A.ImportStmt{const name=this.any();this.consume('from');const path=this.any();this.match(';');return{kind:'Import',name,path};}
  private fnStmt():A.FnDecl{const name=this.any();this.consume('(');const params:string[]=[];while(!this.checkValue(')')){params.push(this.any());if(!this.match(','))break;}this.consume(')');return{kind:'FnDecl',name,params,body:this.block()};}
  private componentStmt():A.ComponentStmt{const name=this.any();this.consume('{');const body:A.Stmt[]=[];while(!this.check('eof')&&!this.checkValue('}')){if(this.match('state')){body.push(this.varStmt(true));continue;}if(this.match('render')){body.push({kind:'Block',body:this.block().body});continue;}body.push(this.statement());}this.consume('}');return{kind:'Component',name,body};}
- private varStmt(_state=false):A.VarDecl{const first=this.any();const mutable=first!=='const';let type:string|undefined,name:string;if(first==='const'||first==='val'||first==='var'||first==='let'){name=this.any();if(this.match(':'))type=this.any();}else{type=first;name=this.any();}let value:A.Expr|undefined;if(this.match('='))value=this.expression();this.match(';');return{kind:'VarDecl',name,type,mutable,value};}
- private isVarStart(){return['const','val','var','let','int','int8','int16','int32','int64','uint8','uint16','uint32','uint64','float','double','string','bool','any'].includes(this.peek().value);}
+ private signalStmt():A.SignalDecl{const name=this.any();let type:string|undefined;if(this.match(':'))type=this.any();this.match('=');const value=this.expression();this.match(';');return{kind:'Signal',name,type,value};}
+ private watchStmt():A.WatchStmt{const name=this.any();return{kind:'Watch',name,body:this.block()};}
+ private emitStmt():A.EmitStmt{const name=this.any();let value:A.Expr|undefined;if(this.match('(')){if(!this.checkValue(')'))value=this.expression();this.consume(')');}else if(this.match('='))value=this.expression();this.match(';');return{kind:'Emit',name,value};}
+ private deriveStmt():A.DeriveStmt{const name=this.any();this.consume('=');const value=this.expression();this.match(';');return{kind:'Derive',name,value};}
+ private varStmt(_state=false):A.VarDecl{const first=this.any();const mutable=first!=='const';let type:string|undefined,name:string;if(first==='const'){name=this.any();if(this.match(':'))type=this.any();}else{type=first;name=this.any();}let value:A.Expr|undefined;if(this.match('='))value=this.expression();this.match(';');return{kind:'VarDecl',name,type,mutable,value};}
+ private isVarStart(){return['const','int','int8','int16','int32','int64','uint8','uint16','uint32','uint64','float','double','string','bool','any'].includes(this.peek().value);}
  private ifStmt():A.IfStmt{const test=this.expression(),consequent=this.block();let alternate; if(this.match('else'))alternate=this.block();return{kind:'If',test,consequent,alternate};}
  private block():A.BlockStmt{this.consume('{');return this.blockAfterOpen();} private blockAfterOpen():A.BlockStmt{const body:A.Stmt[]=[];while(!this.check('eof')&&!this.checkValue('}'))body.push(this.statement());this.consume('}');return{kind:'Block',body};}
  private expression():A.Expr{return this.assignment();}
