@@ -18,11 +18,16 @@ ARR-native concepts include `signal`, `watch`, `emit`, `derive`, `view`, `boot`,
 - `docs/TYPE_SYSTEM.md` type system
 - `docs/RUNTIME.md` execution model
 - `docs/COMPONENTS.md` component and reactive UI model
+- `docs/FRAMEWORK.md` UI, audio, graphics, input, storage and time framework
 - `docs/MODULES.md` modules and standard library
 - `docs/DIAGNOSTICS.md` diagnostics
 - `docs/TOOLCHAIN.md` CLI and tooling
 - `docs/CONFORMANCE.md` compatibility contract
 - `docs/ARR_NATIVE.md` ARR-only grammar and reactive primitives
+
+## Framework foundation
+
+The runtime now exposes ARR-owned `UI`, `Audio`, `Graphics`, `Input`, `Storage` and `Time` namespaces. They are backend-neutral foundations, not wrappers around another language's UI framework.
 
 ## Canonical ARR
 
@@ -57,12 +62,12 @@ boot {
 ## Repository
 
 ```text
-src/        lexer, parser, AST and interpreter runtime
+src/        lexer, parser, AST, interpreter and framework runtime
 examples/   canonical ARR programs
 tests/      lexer, parser and runtime tests
-docs/       official ARR language specification
+docs/       official ARR language and framework specification
 ```
 
 ## Status
 
-ARR is being built as a real language. `main` is the single canonical development line. New syntax is promoted only when it has implementation tests and official documentation.
+ARR is being built as a real language and framework. `main` is the single canonical development line. New syntax and framework contracts are promoted only when they have implementation tests and official documentation.
