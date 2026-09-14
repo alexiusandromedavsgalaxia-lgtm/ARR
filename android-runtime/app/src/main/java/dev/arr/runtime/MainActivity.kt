@@ -1,113 +1,104 @@
 package dev.arr.runtime
 
 import android.content.res.Configuration
-import android.os.Bundle
 import android.graphics.Color
+import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
-import android.widget.Space
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.activity.ComponentActivity
 
 class MainActivity : ComponentActivity() {
-    private lateinit var runtime: ARRRuntime
-    private var selectedTab = 0
+    private lateinit var content: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        runtime = ARRRuntime(this)
         setContentView(buildApp())
+        showPage(0)
     }
 
-    private fun isTablet(): Boolean {
-        return (resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) >=
-            Configuration.SCREENLAYOUT_SIZE_LARGE
-    }
+    private fun isTablet() = (resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE
 
     private fun buildApp(): View {
-        return if (isTablet()) buildTabletApp() else buildMobileApp()
-    }
-
-    private fun buildMobileApp(): View {
-        val root = runtime.root()
-        root.setPadding(0, 0, 0, 0)
-
-        val content = runtime.column(
-            runtime.text("ARR App Builder", 26f),
-            runtime.text("Aplicaciones Android desde ARR", 17f),
-            runtime.text("Diseña · escribe Kotlin · compila APK"),
-            runtime.button("Nueva aplicación") {
-                showMobileMessage("Nueva aplicación", "Crea un proyecto Android nuevo desde el runtime de ARR.")
-            },
-            runtime.button("Mis proyectos") {
-                showMobileMessage("Mis proyectos", "Aquí aparecerán tus aplicaciones ARR y Kotlin.")
-            },
-            runtime.button("Compilar APK") {
-                showMobileMessage("Compilación", "El proyecto se enviará al pipeline de Gradle para generar la APK.")
-            }
-        )
-        content.setPadding(20, 28, 20, 16)
-
-        val scroll = android.widget.ScrollView(this).apply {
-            addView(content)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.rgb(15, 15, 18))
         }
+        if (isTablet()) {
+            val body = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            val nav = buildNavigation(true)
+            content = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(32, 28, 32, 24)
+            }
+            val scroll = ScrollView(this).apply { addView(content) }
+            body.addView(nav, LinearLayout.LayoutParams(260, -1))
+            body.addView(scroll, LinearLayout.LayoutParams(0, -1, 1f))
+            root.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
+        } else {
+            content = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(20, 28, 20, 20)
+            }
+            root.addView(ScrollView(this).apply { addView(content) }, LinearLayout.LayoutParams(-1, 0, 1f))
+            root.addView(buildNavigation(false), LinearLayout.LayoutParams(-1, 76))
+        }
+        return root
+    }
 
-        val tabs = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+    private fun buildNavigation(tablet: Boolean): LinearLayout {
+        val nav = LinearLayout(this).apply {
+            orientation = if (tablet) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setPadding(6, 8, 6, 8)
             setBackgroundColor(Color.rgb(24, 24, 28))
         }
-
-        val tabNames = listOf("Inicio", "Código", "Proyectos", "Ajustes")
-        tabNames.forEachIndexed { index, name ->
-            val tab = runtime.button(name) {
-                selectedTab = index
-                showMobileTab(index)
-            }
-            tabs.addView(tab, LinearLayout.LayoutParams(0, 58, 1f))
+        listOf("Inicio", "Código", "Proyectos", "Ajustes").forEachIndexed { index, label ->
+            nav.addView(android.widget.Button(this).apply {
+                text = label
+                setOnClickListener { showPage(index) }
+            }, if (tablet) LinearLayout.LayoutParams(-1, 64) else LinearLayout.LayoutParams(0, 64, 1f))
         }
-
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        root.addView(tabs, LinearLayout.LayoutParams(-1, 66))
-        return root
+        return nav
     }
 
-    private fun showMobileTab(index: Int) {
-        val title = when (index) {
-            0 -> "Inicio"
-            1 -> "Código"
-            2 -> "Proyectos"
-            else -> "Ajustes"
+    private fun showPage(index: Int) {
+        content.removeAllViews()
+        val titles = listOf("ARR App Builder", "Código", "Proyectos", "Ajustes")
+        val messages = listOf(
+            "Aplicaciones Android desde ARR. La navegación funciona sin reemplazar la pantalla completa.",
+            "Editor ARR/Kotlin y herramientas de previsualización.",
+            "Tus proyectos y las APK generadas por el pipeline de Android.",
+            "Configuración del runtime y del proceso de compilación."
+        )
+        content.addView(TextView(this).apply {
+            text = titles[index]
+            textSize = 28f
+            setTextColor(Color.WHITE)
+            setPadding(0, 0, 0, 16)
+        })
+        content.addView(TextView(this).apply {
+            text = messages[index]
+            textSize = 17f
+            setTextColor(Color.LTGRAY)
+            setPadding(0, 0, 0, 24)
+        })
+        if (index == 0) {
+            content.addView(android.widget.Button(this).apply {
+                text = "Probar ARR"
+                setOnClickListener { status("¡ARR está funcionando!") }
+            })
         }
-        val message = when (index) {
-            0 -> "Panel principal del runtime."
-            1 -> "Editor y herramientas Kotlin/ARR."
-            2 -> "Tus proyectos y sus APK."
-            else -> "Configuración del runtime y compilación."
-        }
-        showMobileMessage(title, message)
     }
 
-    private fun showMobileMessage(title: String, message: String) {
-        setContentView(runtime.column(
-            runtime.text(title, 28f),
-            runtime.text(message, 17f),
-            runtime.button("Volver") { setContentView(buildApp()) }
-        ))
-    }
-
-    private fun buildTabletApp(): View {
-        val root = runtime.root()
-        root.addView(runtime.column(
-            runtime.text("ARR App Builder", 32f),
-            runtime.text("Interfaz tablet", 20f),
-            runtime.text("En pantallas grandes ARR puede mostrar navegación y contenido simultáneamente."),
-            runtime.button("Nueva aplicación") { showMobileMessage("Nueva aplicación", "Proyecto nuevo") },
-            runtime.button("Proyectos") { showMobileMessage("Proyectos", "Lista de proyectos") },
-            runtime.button("Compilar APK") { showMobileMessage("Compilar", "Preparando Gradle") }
-        ), LinearLayout.LayoutParams(-1, -1))
-        return root
+    private fun status(message: String) {
+        content.addView(TextView(this).apply {
+            text = message
+            textSize = 20f
+            setTextColor(Color.WHITE)
+            setPadding(0, 24, 0, 0)
+        })
     }
 }
