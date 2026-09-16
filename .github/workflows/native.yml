@@ -1,0 +1,30 @@
+name: ARR native toolchain
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Install NASM
+        run: sudo apt-get update && sudo apt-get install -y nasm qemu-system-x86
+      - name: Build TypeScript toolchain
+        run: npm run build
+      - name: Check canonical OS source
+        run: node dist/cli.js check examples/hello-os.arr
+      - name: Produce boot image
+        run: node dist/cli.js build examples/hello-os.arr --target=x86-bios --out build/arr-os.img
+      - name: Validate boot signature
+        run: test "$(xxd -p -s 510 -l 2 build/arr-os.img)" = "55aa"
+      - name: Validate image size
+        run: test "$(stat -c%s build/arr-os.img)" = "512"
